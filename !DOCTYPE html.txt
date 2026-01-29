@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <title>Mindroot Outbreak - Sobrevivência Completa</title>
+  <style>
+    body { font-family: 'Courier New', monospace; background: linear-gradient(135deg, #0f4c0f, #1a5a1a, #228B22); color: #00FF00; text-align: center; padding: 0; margin: 0; overflow-x: hidden; }
+    #game { max-width: 1000px; margin: auto; padding: 20px; }
+    h1 { font-size: 2.5em; text-shadow: 0 0 20px #00FF00; animation: glow 2s infinite alternate; }
+    @keyframes glow { 0% { text-shadow: 0 0 10px #00FF00; } 100% { text-shadow: 0 0 30px #00FF00, 0 0 40px #00FF00; } }
+    button { background: linear-gradient(#DC3545, #8B0000); color: white; padding: 15px 30px; margin: 10px; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    button:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(220,53,69,0.8); }
+    button:disabled { background: gray; cursor: not-allowed; }
+    #status { background: rgba(0,0,0,0.8); padding: 20px; border-radius: 15px; margin: 20px 0; font-size: 18px; border: 2px solid #00FF00; }
+    #inventario { background: rgba(0,255,0,0.1); padding: 20px; border-radius: 15px; margin: 20px 0; font-size: 16px; }
+    #mapa { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+    .local { background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; cursor: pointer; transition: all 0.3s; border: 1px solid #00FF00; }
+    .local:hover { background: rgba(0,255,0,0.3); transform: scale(1.05); }
+    #log { background: rgba(0,0,0,0.9); padding: 20px; height: 350px; overflow-y: scroll; margin: 20px 0; text-align: left; white-space: pre-wrap; border-radius: 15px; border: 2px solid #00FF00; font-size: 14px; }
+    .final { font-size: 28px; color: gold; animation: pulse 1s infinite; background: rgba(0,0,0,0.8); padding: 30px; border-radius: 20px; margin: 20px; text-shadow: 0 0 20px gold; }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+    #player { margin: 10px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <h1>🧠 MINDROOT OUTBREAK 🧠</h1>
+    <p><em>Vírus Mindroot controla cérebros na Amazônia! Explore, colete, detecte infectados. 3 cientistas pra cura. Sobreviva às noites...</em></p>
+    <div id="status">
+      <strong>Dia:</strong> <span id="dia">1</span> | Recursos Totais: <span id="recursos">100</span> | Infecção Base: <span id="infect">0</span>% | Cientistas: <span id="cient">0</span>/3 | Infectados Entrados: <span id="infectados">0</span> | Saúde Base: <span id="saude">100</span>%
+    </div>
+    <div id="inventario">
+      Comida: <span id="comida">30</span> | Madeira: <span id="madeira">20</span> | Remédios: <span id="remedios">10</span> | Amostras: <span id="amostras">0</span>
+    </div>
+    <div id="player">
+      Player 1: Exploração | Player 2: Detecção (alternem!)
+    </div>
+    <h3>🗺️ Mapa da Floresta (Clique pra Explorar)</h3>
+    <div id="mapa">
+      <div class="local" onclick="explorarLocal('cachoeira')">🏞️ Cachoeira (Cientista 1?)</div>
+      <div class="local" onclick="explorarLocal('lab')">🏭 Lab Abandonado (Cientista 2?)</div>
+      <div class="local" onclick="explorarLocal('aldeia')">🏘️ Aldeia Indígena (Cientista 3?)</div>
+      <div class="local" onclick="explorarLocal('rio')">🌊 Rio (Recursos?)</div>
+      <div class="local" onclick="explorarLocal('ruinas')">🗿 Ruínas Maias (Amostras?)</div>
+      <div class="local" onclick="explorarLocal('clareira')">🌳 Clareira (Madeira?)</div>
+    </div>
+    <button onclick="detectar()">🔍 Detectar Visitante (Puzzle Completo)</button>
+    <button onclick="dormir()">🌙 Dormir (Noite - Eventos Tensos!)</button>
+    <button onclick="resetGame()">🔄 Novo Jogo</button>
+    <div id="log">🌧️ Dia 1: Chuva na selva... Base segura. Hora de explorar!</div>
+  </div>
+  <script>
+    // Estado completo (salva automático)
+    let gameState = JSON.parse(localStorage.getItem('mindrootOutbreak')) || {
+      dia: 1, recursos: 100, infect: 0, cient: 0, infectados: 0, saude: 100,
+      comida: 30, madeira: 20, remedios: 10, amostras: 0, errosSeguidos: 0
+    };
+    const logEl = document.getElementById('log');
+    function saveState() { localStorage.setItem('mindrootOutbreak', JSON.stringify(gameState)); }
+    function addLog(text) { 
+      logEl.textContent += '\n' + text; 
+      logEl.scrollTop = logEl.scrollHeight; 
+    }
+    function updateUI() {
+      document.getElementById('dia').textContent = gameState.dia;
+      document.getElementById('recursos').textContent = gameState.recursos;
+      document.getElementById('infect').textContent = gameState.infect;
+      document.getElementById('cient').textContent = gameState.cient;
+      document.getElementById('infectados').textContent = gameState.infectados;
+      document.getElementById('saude').textContent = gameState.saude;
+      document.getElementById('comida').textContent = gameState.comida;
+      document.getElementById('madeira').textContent = gameState.madeira;
+      document.getElementById('remedios').textContent = gameState.remedios;
+      document.getElementById('amostras').textContent = gameState.amostras;
+    }
+    function checkFinal() {
+      if (gameState.cient >= 3 && gameState.infect < 25 && gameState.saude > 50) {
+        addLog('🏆 FINAL BOM: 3 cientistas salvos! Vocês sintetizam a cura. O mundo respira aliviado. Dr. Lima, lenda da selva! 🌍💉');
+        document.querySelectorAll('button, .local').forEach(el => el.disabled = true);
+        return true;
+      }
+      if (gameState.infectados >= 2 || gameState.saude <= 0) {
+        addLog('💀 FINAL RUIM: Infectados sabotaram tudo! Cerca destruída, base invadida. Vírus Mindroot vence. Game Over. 🔚');
+        document.querySelectorAll('button, .local').forEach(el => el.disabled = true);
+        return true;
+      }
+      if (gameState.errosSeguidos >= 4 || gameState.infect >= 100) {
+        addLog('🧠 FINAL SECRETO: Você está infectado... mas CONSCIENTE! Sussurros: "Derrote os humanos restantes." Vitória dark do Mindroot! 😈👑');
+        document.querySelectorAll('button, .local').forEach(el => el.disabled = true);
+        return true;
+      }
+      if (gameState.recursos <= 0 || gameState.comida <= 0) {
+        addLog('❌ FINAL RUIM: Recursos esgotados. Fome e caos finalizam a base. Game Over.');
+        document.querySelectorAll('button, .local').forEach(el => el.disabled = true);
+        return true
